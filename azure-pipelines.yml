@@ -2,45 +2,88 @@ trigger:
 - main
 
 pool:
-  vmImage: 'windows-latest'  # Use self-hosted if you need IIS directly
+  vmImage: 'windows-latest'
 
 variables:
   solution: '**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  artifactName: 'dotnet9app'
 
-steps:
+stages:
 
-# ⬇ Install .NET SDK 9.0.300
-- task: UseDotNet@2
-  inputs:
-    version: '9.0.300'
-    includePreviewVersions: true
-    packageType: 'sdk'
+# ========================
+# Stage 1: Build & Publish
+# ========================
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: BuildJob
+    steps:
 
-# ⬇ Restore dependencies
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
-    projects: '$(solution)'
+    # ⬇ Install .NET SDK 9.0.300
+    - task: UseDotNet@2
+      inputs:
+        version: '9.0.300'
+        includePreviewVersions: true
+        packageType: 'sdk'
 
-# ⬇ Build the project
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'build'
-    projects: '$(solution)'
-    arguments: '--configuration $(buildConfiguration)'
+    # ⬇ Restore dependencies
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
 
-# ⬇ Publish the app to a folder
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'publish'
-    publishWebProjects: true
-    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: false
+    # ⬇ Build the project
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration)'
 
-# ⬇ Publish artifacts (to deploy later)
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: 'dotnet9app'
+    # ⬇ Publish the app to a folder
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: false
+
+    # ⬇ Publish artifacts (to deploy later)
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: '$(artifactName)'
+
+# ====================
+# Stage 2: Deployment
+# ====================
+- stage: Deploy
+  displayName: 'Deploy Stage'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: DeployJob
+    steps:
+
+    # ✅ Download the artifact from the latest build
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: '$(artifactName)'
+        targetPath: '$(Build.ArtifactStagingDirectory)\deploy'
+
+    # ✅ SSH deploy via inline script
+    - task: CopyFilesOverSSH@0
+      inputs:
+        sshEndpoint: 'my-ssh-vm'
+        sourceFolder: '$(Build.ArtifactStagingDirectory)\deploy'
+        contents: '**'
+        targetFolder: '/c/inetpub/wwwroot'
+
+    - task: SSH@0
+      inputs:
+        sshEndpoint: 'my-ssh-vm'
+        runOptions: 'inline'
+        inline: |
+          net stop w3svc
+          net start w3svc
