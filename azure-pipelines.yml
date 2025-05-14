@@ -72,7 +72,24 @@ stages:
         artifactName: '$(artifactName)'
         targetPath: '$(Build.ArtifactStagingDirectory)\deploy'
 
-    # ✅ SSH deploy via inline script
+    # ✅ Ensure IIS is installed on the remote machine
+    - task: SSH@0
+      displayName: 'Ensure IIS is installed'
+      inputs:
+        sshEndpoint: 'my-ssh-vm'
+        runOptions: 'inline'
+        inline: |
+          powershell -Command "
+            $iis = Get-WindowsFeature -Name Web-Server;
+            if (-not $iis.Installed) {
+              Write-Host 'IIS not installed. Installing now...'
+              Install-WindowsFeature -Name Web-Server -IncludeManagementTools
+            } else {
+              Write-Host 'IIS is already installed.'
+            }
+          "
+
+    # ✅ SSH deploy via file copy
     - task: CopyFilesOverSSH@0
       inputs:
         sshEndpoint: 'my-ssh-vm'
@@ -80,6 +97,7 @@ stages:
         contents: '**'
         targetFolder: '/c/inetpub/wwwroot'
 
+    # ✅ Restart IIS to apply changes
     - task: SSH@0
       inputs:
         sshEndpoint: 'my-ssh-vm'
