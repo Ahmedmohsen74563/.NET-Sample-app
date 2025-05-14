@@ -89,6 +89,35 @@ stages:
             }
           "
 
+    # ✅ Ensure .NET 9 SDK or Hosting Bundle is installed
+    - task: SSH@0
+      displayName: 'Ensure .NET 9 SDK or Hosting Bundle is installed'
+      inputs:
+        sshEndpoint: 'my-ssh-vm'
+        runOptions: 'inline'
+        inline: |
+          powershell -Command "
+            $dotnetSdkVersion = '9.0.300';
+            $sdkInstalled = Get-Command dotnet -ErrorAction SilentlyContinue;
+            $isSdkInstalled = $false;
+            if ($sdkInstalled) {
+              $dotnetVersion = & dotnet --version;
+              if ($dotnetVersion -eq $dotnetSdkVersion) {
+                $isSdkInstalled = $true;
+                Write-Host '.NET SDK 9.0.300 is already installed.'
+              }
+            }
+
+            if (-not $isSdkInstalled) {
+              Write-Host 'Installing .NET SDK 9.0.300...'
+              Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/56f6e6bc-f54a-4d0f-b736-1be9c732c2c4/96d57393e2e8b93f317fb9d4de5ae041/dotnet-sdk-9.0.300-win-x64.exe -OutFile 'C:\dotnet-sdk-9.0.300-win-x64.exe'
+              Start-Process -FilePath 'C:\dotnet-sdk-9.0.300-win-x64.exe' -ArgumentList '/quiet', '/install' -NoNewWindow -Wait
+              Write-Host '.NET SDK 9.0.300 installation complete.'
+            } else {
+              Write-Host '.NET SDK 9.0.300 is already installed.'
+            }
+          "
+
     # ✅ SSH deploy via file copy
     - task: CopyFilesOverSSH@0
       inputs:
