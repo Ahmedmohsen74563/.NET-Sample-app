@@ -90,14 +90,16 @@ stages:
                 Write-Host 'IIS is already installed.'
               }
             displayName: 'Ensure IIS is installed on Windows 11'
+          # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
+          - task: IISWebAppDeploymentOnMachineGroup@0
+            inputs:
+              Package: '$(Pipeline.Workspace)\deploy\**\*.zip'
 
-          # ✅ Copy files to IIS folder
-          - powershell: |
-              Copy-Item -Path "$(Pipeline.Workspace)\deploy\*" -Destination "C:\inetpub\wwwroot" -Recurse -Force
-            displayName: 'Copy files to IIS'
-
-          # ✅ Restart IIS
-          - powershell: |
-              net stop w3svc
-              net start w3svc
-            displayName: 'Restart IIS'
+          # ✅ Manage IIS website (create or update)
+          - task: IISWebAppManagementOnMachineGroup@0
+            inputs:
+              IISDeploymentType: 'IISWebsite'
+              ActionIISWebsite: 'CreateOrUpdateWebsite'
+              WebsiteName: 'MyDotNetApp'  # <-- Customize as needed
+              WebsitePhysicalPath: '%SystemDrive%\inetpub\wwwroot'
+              WebsitePhysicalPathAuth: 'WebsiteUserPassThrough'
