@@ -81,14 +81,16 @@ stages:
 
           # ✅ Ensure IIS is installed
           - powershell: |
-              $iis = Get-WindowsFeature -Name Web-Server
-              if (-not $iis.Installed) {
-                Write-Host 'IIS not installed. Installing now...'
-                Install-WindowsFeature -Name Web-Server -IncludeManagementTools
+              $iisFeature = Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServer
+              if ($iisFeature.State -ne 'Enabled') {
+                Write-Host 'IIS is not installed. Installing now...'
+                Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServer -All -NoRestart
+                Write-Host 'IIS installation complete.'
               } else {
                 Write-Host 'IIS is already installed.'
               }
-            displayName: 'Ensure IIS is installed'
+            displayName: 'Ensure IIS is installed on Windows 11'
+
 
           # ✅ Ensure .NET SDK 9.0.300 is installed
           - powershell: |
