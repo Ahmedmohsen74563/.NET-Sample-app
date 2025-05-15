@@ -91,26 +91,6 @@ stages:
               }
             displayName: 'Ensure IIS is installed on Windows 11'
 
-
-          # ✅ Ensure .NET SDK 9.0.300 is installed
-          - powershell: |
-              $dotnetSdkVersion = '9.0.300'
-              $sdkInstalled = Get-Command dotnet -ErrorAction SilentlyContinue
-              $isSdkInstalled = $false
-              if ($sdkInstalled) {
-                $dotnetVersion = & dotnet --version
-                if ($dotnetVersion -eq $dotnetSdkVersion) {
-                  $isSdkInstalled = $true
-                  Write-Host '.NET SDK 9.0.300 is already installed.'
-                }
-              }
-              if (-not $isSdkInstalled) {
-                Write-Host 'Installing .NET SDK 9.0.300...'
-                Invoke-WebRequest -Uri https://download.visualstudio.microsoft.com/download/pr/56f6e6bc-f54a-4d0f-b736-1be9c732c2c4/96d57393e2e8b93f317fb9d4de5ae041/dotnet-sdk-9.0.300-win-x64.exe -OutFile 'C:\dotnet-sdk-9.0.300-win-x64.exe'
-                Start-Process -FilePath 'C:\dotnet-sdk-9.0.300-win-x64.exe' -ArgumentList '/quiet', '/install' -NoNewWindow -Wait
-              }
-            displayName: 'Ensure .NET SDK 9.0.300 is installed'
-
           # ✅ Copy files to IIS folder
           - powershell: |
               Copy-Item -Path "$(Pipeline.Workspace)\deploy\*" -Destination "C:\inetpub\wwwroot" -Recurse -Force
