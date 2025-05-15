@@ -47,7 +47,7 @@ stages:
         command: 'publish'
         publishWebProjects: true
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-        zipAfterPublish: false
+        zipAfterPublish: true
 
     # ⬇ Publish artifacts (to deploy later)
     - task: PublishBuildArtifacts@1
