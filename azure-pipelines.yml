@@ -79,18 +79,6 @@ stages:
               artifactName: '$(artifactName)'
               targetPath: '$(Pipeline.Workspace)/deploy'
 
-          # ✅ Ensure IIS is installed
-          - powershell: |
-              $iisFeature = Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServer
-              if ($iisFeature.State -ne 'Enabled') {
-                Write-Host 'IIS is not installed. Installing now...'
-                Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServer -All -NoRestart
-                Write-Host 'IIS installation complete.'
-              } else {
-                Write-Host 'IIS is already installed.'
-              }
-            displayName: 'Ensure IIS is installed on Windows 11'
-
           # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
           - task: IISWebAppDeploymentOnMachineGroup@0
             inputs:
