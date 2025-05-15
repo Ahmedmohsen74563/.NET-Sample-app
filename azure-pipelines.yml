@@ -90,10 +90,13 @@ stages:
                 Write-Host 'IIS is already installed.'
               }
             displayName: 'Ensure IIS is installed on Windows 11'
+
           # ✅ Deploy the web app package using IISWebAppDeploymentOnMachineGroup
           - task: IISWebAppDeploymentOnMachineGroup@0
             inputs:
+              WebSiteName: 'MyDotNetApp'  # <-- REQUIRED
               Package: '$(Pipeline.Workspace)\deploy\**\*.zip'
+
 
           # ✅ Manage IIS website (create or update)
           - task: IISWebAppManagementOnMachineGroup@0
